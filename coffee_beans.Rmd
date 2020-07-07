@@ -1,0 +1,51 @@
+---
+title: "Coffee Beans"
+author: "Josef Klafka"
+date: "7/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+require(tidyverse)
+require(tidyboot)
+require(here)
+require(maps)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r read in data}
+coffee_ratings <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+```
+
+```{r EDA}
+world_map <- map_data("world")
+
+region_coffee <- coffee_ratings %>%
+  select(country_of_origin, acidity) %>%
+  rename(region = country_of_origin) 
+
+region_data <- region_coffee %>%
+  group_by(region) %>%
+  # nest() %>%
+  # tidyboot_mean(acidity, nboot = 100)
+  summarise(acidity = mean(acidity)) %>%
+  ungroup() %>%
+  left_join(world_map, by = "region") %>%
+  group_by(region) %>%
+  summarise(long = mean(long), lat = mean(lat), acidity = mean(acidity)) %>%
+  filter(complete.cases(.))
+
+
+ggplot(region_data, aes(long, lat, group = region))+
+  geom_polygon(aes(fill = acidity ), color = "white")+
+  scale_fill_viridis_c(option = "C")
+
+ggplot(world_map, aes(x = long, y = lat)) +
+  geom_polygon(aes( group = group, fill = region))+
+  geom_text(aes(label = region), data = region_data,  size = 3, hjust = 0.5)+
+  scale_fill_viridis_d()+
+  theme_void()+
+  theme(legend.position = "none")
+```
